@@ -1,0 +1,157 @@
+/// An object representing a node of the Trie data structure, which stores the
+/// current value (a string containing all characters from the root of the Trie
+/// to the current node), a flag for determining if the node represents the end of
+/// a valid word, and a collection of child nodes (represented as a dictionary
+/// of characters -> nodes)
+public class TrieNode {
+    let value: String
+    var isWord: Bool
+    var children: [String: TrieNode]
+    
+    init(_ value: String) {
+        self.value = value
+        self.isWord = false
+        self.children = [:]
+    }
+}
+
+/// An implementation of the Trie data structure, a.k.a the __Prefix Tree__,
+/// which offers optimal search and retrieval of strings from large data sets
+public class Trie {
+    var root: TrieNode
+    
+    init() {
+        self.root = TrieNode("")
+    }
+    
+    /// Inserts a string into the Trie, and flags the string as a valid word
+    ///
+    /// - Parameter word: a string to be split into characters, and added to the Trie
+    func insert(_ word: String) {
+        var node = self.root
+        for char in word {
+            let ch = "\(char)"
+            if let existent = node.children[ch] {
+                node = existent
+            } else {
+                let newNode = TrieNode("\(node.value)\(ch)")
+                node.children[ch] = newNode
+                node = newNode
+            }
+        }
+        node.isWord = true
+    }
+    
+    /// Searches the Trie for the provided string, returning true if the Trie
+    /// has explicitly inserted the word. Words which are composed of characters
+    /// which exist in the Trie will not be flagged as valid words if not explicitly
+    /// inserted, and attempting to use this function for such words will return false.
+    ///
+    /// - Parameter word: String for which to query the Trie
+    /// - Returns: true if word has been inserted, otherwise false
+    func search(_ word: String) -> Bool {
+        var node = self.root
+        for char in word {
+            let ch = "\(char)"
+            if let existent = node.children[ch] {
+                node = existent
+            } else {
+                return false
+            }
+        }
+        return node.isWord
+    }
+    
+    /// Searches the Trie for the characters in the provided string, returning true
+    /// if the Trie contains a node for each character. Nearly identical to the sibling
+    /// function __search(word:)__, this function will return true even if the word has not
+    /// been explicitly inserted into the Trie.
+    ///
+    /// - Parameter word: String for which to query the Trie
+    /// - Returns: true if characters of word are in Trie, otherwise false
+    func contains(_ word: String) -> Bool {
+        var node = self.root
+        for char in word {
+            let ch = "\(char)"
+            if let existent = node.children[ch] {
+                node = existent
+            } else {
+                return false
+            }
+        }
+        return true
+    }
+    
+    /// Queries the Trie for all valid words that begin with prefix string, i.e
+    /// if the prefix is _d_, all words in the Trie starting with _d_ are returned.
+    ///
+    /// - Parameter prefix: String denoting the first characters of words to be query
+    /// - Returns: Array of strings, all valid words that start with supplied prefix
+    func autocomplete(_ prefix: String) -> [String] {
+        var node = self.root
+        for char in prefix {
+            let ch = "\(char)"
+            if let existent = node.children[ch] {
+                node = existent
+            } else {
+                return []
+            }
+        }
+        
+        return depthFirstSearch(node)
+    }
+    
+    /// Accumulates all valid words within and beneath a given node
+    ///
+    /// - Parameter node: Instance of TrieNode to be searched
+    /// - Returns: Array of all valid words stored as children of supplied node
+    private func depthFirstSearch(_ node: TrieNode) -> [String] {
+        var results: [String] = []
+        if node.isWord { results.append(node.value) }
+        node.children.forEach {
+            results += depthFirstSearch($0.value)
+        }
+        return results
+    }
+}
+
+////////
+// TESTS
+////////
+
+import XCTest
+
+// Create Trie and insert 10 items
+let trie = Trie()
+trie.insert("apple")
+trie.insert("application")
+trie.insert("amplitude")
+trie.insert("amplifier")
+trie.insert("ancho")
+trie.insert("ampere")
+trie.insert("amp")
+trie.insert("amicable")
+trie.insert("ample")
+trie.insert("amaretto")
+
+let query = "a"
+print(trie.autocomplete(query))
+
+// Test .autocomplete(prefix:)
+//XCTAssertEqual(trie.autocomplete("a").count, 10)
+//XCTAssert(trie.autocomplete("ami").contains("amicable"))
+//XCTAssertFalse(trie.autocomplete("ami").contains("amaretto"))
+//XCTAssert(trie.autocomplete("amp").contains("amp"))
+//XCTAssert(trie.autocomplete("amp").contains("amplifier"))
+//XCTAssertFalse(trie.autocomplete("amp").contains("bogus"))
+//XCTAssert(trie.autocomplete("").contains("application"))
+
+// Test .search(word:)
+//XCTAssert(trie.search("apple"))
+//XCTAssertFalse(trie.search("app"))
+//XCTAssertFalse(trie.search("bogus"))
+
+// Test .contains(word:)
+//XCTAssert(trie.contains("amicable"))
+//XCTAssert(trie.contains("ami"))
+//XCTAssertFalse(trie.contains("bogus"))
